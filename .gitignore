@@ -1,0 +1,70 @@
+# =============================================================================
+# RetailDataOps .gitignore
+# =============================================================================
+
+# ---------- Python ----------
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+*.whl
+pip-wheel-metadata/
+
+# ---------- Virtual environments ----------
+.venv/
+venv/
+env/
+ENV/
+
+# ---------- IDE / Editors ----------
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.project
+.classpath
+.settings/
+
+# ---------- OS ----------
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ---------- Secrets & Environment ----------
+.env
+*.pem
+*.key
+*.crt
+*.p12
+*.jks
+
+# ---------- Testing / Coverage ----------
+.coverage
+htmlcov/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# ---------- Data (never commit raw data) ----------
+data/
+*.csv
+*.parquet
+*.avro
+*.orc
+*.json.gz
+*.csv.gz
+
+# ---------- Logs ----------
+logs/
+*.log
+
+# ---------- Docker ----------
+docker-compose.override.yml
+
+# ---------- Notebooks ----------
+.ipynb_checkpoints/
