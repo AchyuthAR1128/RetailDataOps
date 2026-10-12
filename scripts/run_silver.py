@@ -38,6 +38,10 @@ def main() -> None:
     parser.add_argument("--bronze-dir", default="data/bronze")
     parser.add_argument("--landing-dir", default="data/landing")
     parser.add_argument("--silver-dir", default="data/silver")
+    parser.add_argument(
+        "--batch-id",
+        help="Optional batch to process; otherwise process all landing manifests.",
+    )
     args = parser.parse_args()
 
     manifests: dict[str, dict[str, object]] = {}
@@ -47,14 +51,23 @@ def main() -> None:
         batch_id = manifest.get("batch_id")
         if not isinstance(batch_id, str):
             raise SilverError(f"Manifest '{manifest_path}' has no valid batch_id.")
+        if args.batch_id is not None and batch_id != args.batch_id:
+            continue
         manifests[batch_id] = manifest
+    if args.batch_id is not None and args.batch_id not in manifests:
+        raise SilverError(
+            f"Manifest for requested batch '{args.batch_id}' was not found."
+        )
 
     spark = get_spark_session()
     try:
         transformer = SilverTransformer(spark)
         day_keys = load_manifest_day_keys(manifests)
+        sales = spark.read.format("delta").load(str(Path(args.bronze_dir) / "sales"))
+        if args.batch_id is not None:
+            sales = sales.filter(sales.batch_id == args.batch_id)
         frame = transformer.transform(
-            spark.read.format("delta").load(str(Path(args.bronze_dir) / "sales")),
+            sales,
             spark.read.format("delta").load(str(Path(args.bronze_dir) / "calendar")),
             spark.read.format("delta").load(str(Path(args.bronze_dir) / "sell_prices")),
             day_keys,
