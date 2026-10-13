@@ -10,6 +10,7 @@ import csv
 import math
 from collections import Counter
 from pathlib import Path
+from typing import Any
 
 
 def find_data_dir() -> Path:
@@ -32,7 +33,7 @@ def find_data_dir() -> Path:
     raise FileNotFoundError("No CSV files found in 'data/raw' or its subdirectories.")
 
 
-def profile_file_general(file_path: Path) -> dict:
+def profile_file_general(file_path: Path) -> dict[str, Any]:
     """Perform general profiling on a CSV file."""
     file_size_bytes = file_path.stat().st_size
     file_size_mb = file_size_bytes / (1024 * 1024)
@@ -300,10 +301,10 @@ def profile_sales(file_path: Path, calendar_file: Path | None = None) -> None:
         for row in reader:
             row_count += 1
             if len(first_5) < 5:
-                first_5.append(row[:6] + [f"({len(day_cols)} day values...)"])
+                first_5.append([*row[:6], f"({len(day_cols)} day values...)"])
             if len(last_5) >= 5:
                 last_5.pop(0)
-            last_5.append(row[:6] + [f"({len(day_cols)} day values...)"])
+            last_5.append([*row[:6], f"({len(day_cols)} day values...)"])
 
             item_id, dept_id, cat_id, store_id, state_id = (
                 row[1],
