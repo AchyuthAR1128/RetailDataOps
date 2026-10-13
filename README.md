@@ -15,32 +15,121 @@ RetailDataOps is a production-style data engineering portfolio project
 demonstrating end-to-end retail analytics — from raw data ingestion through
 medallion-architecture transformations to forecasting and dashboards.
 
-> **Status:** Phase 1 — Repository structure, tooling, CI skeleton, and secrets
-> handling.
+> **Status:** Phase 4 — CI/CD and deployment readiness for the local
+> Replay-to-Gold pipeline.
 
-## Quickstart
+## Prerequisites
+
+- Python 3.10.x
+- Java 17
+- Git
+- Linux, WSL2 Ubuntu, or another Linux environment for Spark and Delta tests
+- The M5 source files listed in [Dataset setup](#dataset-setup)
+
+Native Windows Spark filesystem writes are not supported by this project's
+validated local setup. On Windows, use WSL2 Ubuntu with Java 17.
+
+## Installation
 
 ```bash
 # Clone the repository
 git clone https://github.com/<owner>/RetailDataOps.git
 cd RetailDataOps
 
-# Create and activate virtual environment (Python 3.10)
-python3 -m venv .venv
-# Windows
-.venv\Scripts\activate
-# macOS/Linux
+# Create and activate a Python 3.10 virtual environment
+python3.10 -m venv .venv
 source .venv/bin/activate
 
-# Install in editable mode with dev dependencies
 pip install -e ".[dev]"
-
-# Install pre-commit hooks
 pre-commit install
-
-# Run all checks
-make check    # or manually: ruff check . && mypy src/ && pytest
 ```
+
+For WSL2 Ubuntu, install and select Java 17 with:
+
+```bash
+sudo apt update
+sudo apt install -y openjdk-17-jdk
+export JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64
+export PATH="$JAVA_HOME/bin:$PATH"
+```
+
+The validated Spark dependencies are PySpark 3.5.9 and Delta Lake 3.3.3.
+The CI workflow installs those exact versions.
+
+## Dataset setup
+
+Place these files under `data/raw/`:
+
+```text
+data/raw/
+├── calendar.csv
+├── sales_train_validation.csv
+└── sell_prices.csv
+```
+
+The raw dataset and generated landing/Bronze/Silver/Gold outputs are ignored
+by Git. Do not commit source data, credentials, or generated Delta tables.
+
+## Quality checks
+
+Run the checks used by CI, plus the local pre-commit hooks:
+
+```bash
+ruff check .
+black --check .
+mypy src/
+SPARK_LOCAL_IP=127.0.0.1 pytest
+pre-commit run --all-files
+```
+
+Or use the Makefile targets:
+
+```bash
+make install
+make check
+```
+
+`pytest` runs the unit, Delta integration, orchestration, and synthetic
+end-to-end tests with coverage.
+
+## Running the pipeline
+
+Run Replay through Gold for a date range:
+
+```bash
+SPARK_LOCAL_IP=127.0.0.1 python scripts/run_pipeline.py \
+  --start-date 2011-01-29 \
+  --end-date 2011-02-04
+```
+
+Run an explicitly selected deterministic batch:
+
+```bash
+SPARK_LOCAL_IP=127.0.0.1 python scripts/run_pipeline.py \
+  --batch-id batch_20110129_20110204
+```
+
+Override locations and allow one retry per failed stage:
+
+```bash
+SPARK_LOCAL_IP=127.0.0.1 python scripts/run_pipeline.py \
+  --batch-id batch_20110129_20110204 \
+  --raw-dir data/raw \
+  --landing-dir data/landing \
+  --bronze-dir data/bronze \
+  --silver-dir data/silver \
+  --gold-dir data/gold \
+  --retries 1
+```
+
+The orchestrator runs:
+
+```text
+Replay -> Bronze -> Silver -> Gold
+```
+
+It stops on stage failure, retries only the failed stage when requested, and
+preserves the existing idempotency and conflict detection behavior.
 
 ## Project Structure
 
