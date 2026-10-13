@@ -68,6 +68,15 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Ensure gitleaks base commit is available
+        if: github.event_name == 'push'
+        run: |
+          SCAN_BASE="${{ github.event.commits[0].id }}"
+          if ! git cat-file -e "${SCAN_BASE}^{commit}" 2>/dev/null; then
+            echo "Base commit ${SCAN_BASE} is unavailable in checkout; falling back to single-commit scan."
+            echo "BASE_REF=${{ github.sha }}" >> "$GITHUB_ENV"
+          fi
+
       - name: Run gitleaks
         uses: gitleaks/gitleaks-action@v2
         env:
